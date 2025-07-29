@@ -316,15 +316,15 @@
 <body>
 <div id="category-bar">
   <select id="genreSelect" onchange="loadGenre(this.value)">
-    <option value="">🎬 Válassz műfajt</option>
-    <option value="thriller">Thriller</option>
-    <option value="sci-fi">Sci-Fi</option>
-    <option value="criminal">Krimi</option>
-    <option value="horror">Horror</option>
-    <option value="drama">Dráma</option>
-    <option value="comedy">Vígjáték</option>
-    <option value="action">Akció</option>
-  </select>
+  <option value="">🎬 Válassz 𝚗𝚊𝚙𝚒▶</option>
+  <option value="thriller">Thriller</option>
+  <option value="sci-fi">Sci-Fi</option>
+  <option value="criminal">Krimi</option>
+  <option value="horror">Horror</option>
+  <option value="drama">Dráma</option>
+  <option value="comedy">Vígjáték</option>
+  <option value="action">Akció</option>
+</select>
 </div>
   <div class="clock" id="clock"></div>
   <h1> ❖ＮＥＴＦＬＩＸ❖</h1>
@@ -563,47 +563,56 @@ function changeDirection(dir) {
 
   // automatikus betöltés
   loadContent();
-  function loadGenre(genre) {
-  if (!genre) return;
+  
+  const genreLinks = {
+  "thriller": "/category/39",
+  "sci-fi": "/category/33",
+  "criminal": "/category/28",
+  "horror": "/category/32",
+  "drama": "/category/29",
+  "comedy": "/category/27",
+  "action": "/category/28"
+};
 
+function loadGenre(genre) {
   const container = document.getElementById("movies");
-  container.innerHTML = "<p style='color:cyan;'>Kategória betöltése: " + genre + "...</p>";
+  if (!genre || !genreLinks[genre]) {
+    container.innerHTML = '<h3 style="text-align:center;">Válassz kategóriát!</h3>';
+    return;
+  }
 
-  const genreUrl = "https://mozigo.hu/genre/" + genre + ".html";
-
-  fetch(proxy + encodeURIComponent(genreUrl))
+  container.innerHTML = '<h3 style="text-align:center;">Betöltés...</h3>';
+  
+  fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://napifilm.hu" + genreLinks[genre]))
     .then(res => res.text())
     .then(html => {
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      const items = doc.querySelectorAll(".movie-img");
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const cards = doc.querySelectorAll('.card.tip, .card');
+      container.innerHTML = '';
 
-      container.innerHTML = "";
-
-      if (items.length === 0) {
-        container.innerHTML = "<p style='color:red;'>Nincs film ebben a kategóriában.</p>";
-        return;
+      if (cards.length === 0) {
+        container.innerHTML = '<h3 style="text-align:center;">Nincsenek filmek ebben a kategóriában.</h3>';
       }
 
-      items.forEach(item => {
-        const link = item.querySelector("a")?.href;
-        const title = item.querySelector("h3")?.textContent.trim();
-        const image = item.closest(".latest-movie-img-container")?.style.backgroundImage.replace(/url\(['"]?(.*?)['"]?\)/, "$1");
+      cards.forEach(card => {
+        const img = card.querySelector('img')?.getAttribute('src');
+        const title = card.querySelector('.card-title a')?.innerText;
+        const link = card.querySelector('a.filename.link')?.getAttribute('href');
 
-        if (link && title && image) {
-          const div = document.createElement("div");
-          div.className = "movie";
-          div.innerHTML = `
-            <img src="${image}" alt="${title}">
-            <div class="movie-title">${title}</div>
+        if (img && title && link) {
+          const el = document.createElement('div');
+          el.className = 'card';
+          el.innerHTML = `
+            <img src="https://napifilm.hu${img}" alt="${title}">
+            <div class="play-icon">▶</div>
+            <div class="card-title">${title}</div>
           `;
-          div.onclick = () => loadPlayer(link, title);
-          container.appendChild(div);
+          el.onclick = () => showPlayer(link, 'Film');
+          container.appendChild(el);
         }
       });
-    })
-    .catch(err => {
-      container.innerHTML = "<p style='color:red;'>Hiba történt a kategória betöltésekor.</p>";
-      console.error(err);
+    }).catch(() => {
+      container.innerHTML = '<h3 style="text-align:center;">Hiba történt a kategória betöltésekor.</h3>';
     });
 }
 </script>
